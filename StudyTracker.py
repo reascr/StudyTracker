@@ -28,8 +28,6 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 # 
 today = date.today()
 current_date = today.strftime("%d.%m.%Y")
-'''now = datetime.now()
-current_time = now.strftime("%H:%M:%S")'''
 
 
 DEFAULT_BUTTON_STYLE = "background-color: rgba(241, 204, 255, 194); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(224, 238, 245); padding: 10px"
@@ -49,7 +47,8 @@ with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
 
     mean_time = (all_time/ len(rows)) * 3600
     up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
-# if current_date == rows[-1][0]: 
+    if current_date != rows[-1][0]:
+        h, m, s = 0,0,0
      
 
 class Ui_MainWindow(object):
@@ -281,6 +280,21 @@ class Ui_MainWindow(object):
                 writer = csv.writer(f)
                 writer.writerow(DateTime)
 
+        with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
+            reader = csv.reader(e)
+            for row in reader:
+                rows.append(row)
+            last_checktime = float(rows[-1][1]) * 3600
+            last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
+            h, m, s = last_checktime_updated.split(":")
+            # Durchschnittliche Zeit pro Tag
+            all_time = 0
+            for row in rows:
+                all_time = all_time + float(row[1])
+
+            mean_time = (all_time/ len(rows)) * 3600
+            up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
+            self.label3.setText("Average Productivity: \n" + str(up_mean_time))
 
 if __name__ == "__main__":
     import sys
