@@ -69,8 +69,9 @@ class Ui_MainWindow(object):
         font = QtGui.QFont()
         font.setPointSize(20)
 
+        # Label for current time 
         self.label0 = QtWidgets.QLabel(self.centralwidget)
-        self.label0.setGeometry(QtCore.QRect(130, 80, 211, 131))
+        self.label0.setGeometry(QtCore.QRect(660, 520, 221, 131))
         self.label0.setFont(font)
         self.label0.setStyleSheet("color:grey")
 
@@ -105,13 +106,18 @@ class Ui_MainWindow(object):
 
         # Label für Durchschnittszeit
         self.label3 = QtWidgets.QLabel(self.centralwidget)
-        self.label3.setGeometry(QtCore.QRect(620, 80, 221, 131))
+        self.label3.setGeometry(QtCore.QRect(630, 80, 221, 131))
         self.label3.setText("Average Productivity: \n" + str(up_mean_time))
         self.label3.setFont(font)
         self.label3.setStyleSheet("color:grey")
         
+        # label for displaying that adding of time by the use was succesful
+        self.label4 = QtWidgets.QLabel(self.centralwidget)
+        self.label4.setGeometry(QtCore.QRect(80, 410, 211, 131))
+        self.label4.setText("")
+        self.label4.setFont(font)
+        self.label4.setStyleSheet("color:grey")
 
-        
         # Canvas für die Plots
         self.figure = plt.figure()
     
@@ -121,6 +127,7 @@ class Ui_MainWindow(object):
         font = QtGui.QFont("Didot", QtGui.QFont.Bold)
         font.setPointSize(23)
 
+        # PushButton for the weekly resume/ overview
         self.b0 = QtWidgets.QPushButton(self.centralwidget)
         self.b0.clicked.connect(self.plot)
         self.b0.setGeometry(QtCore.QRect(80, 300, 211, 131))
@@ -143,6 +150,26 @@ class Ui_MainWindow(object):
         self.b2.setStyleSheet(DEFAULT_BUTTON_STYLE)
         self.b2.setObjectName("b2")
         self.b2.clicked.connect(self.clickedb2)
+
+        # PushButton for adding time manually 
+        self.b3 = QtWidgets.QPushButton(self.centralwidget)
+        self.b3.setGeometry(QtCore.QRect(80, 520, 221, 131))
+        self.b3.setFont(font)
+        self.b3.setStyleSheet("background-color: rgb(200, 255, 226); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(213, 255, 213); padding: 10px")
+        self.b3.setObjectName("b3")
+        #self.b3.clicked.connect(self.clickedb3)
+
+        font = QtGui.QFont("Didot", QtGui.QFont.Bold)
+        font.setPointSize(23)
+
+        # PushButton for truncating Table
+        self.b4 = QtWidgets.QPushButton(self.centralwidget)
+        self.b4.setGeometry(QtCore.QRect(80, 80, 211, 131))
+        self.b4.setFont(font)
+        self.b4.setStyleSheet("background-color: rgb(200, 255, 226); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(213, 255, 213); padding: 10px")
+        self.b4.setObjectName("b4")
+        #self.b4.clicked.connect(self.clickedb4)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1440, 29))
@@ -173,6 +200,8 @@ class Ui_MainWindow(object):
         self.b0.setText(_translate("MainWindow", "Wochenübersicht"))
         self.b1.setText(_translate("MainWindow", "Start"))
         self.b2.setText(_translate("MainWindow", "Pause"))
+        self.b3.setText(_translate("MainWindow", "Add Time"))
+        self.b4.setText(_translate("MainWindow", "Truncate Table"))
         self.menuStatistiken.setTitle(_translate("MainWindow", "Statistiken"))
         self.actionGehe_zu_Statistiken.setText(_translate("MainWindow", "Gehe zu Statistiken"))
     
