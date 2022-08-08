@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTimer, QTime, Qt
 import sys
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import csv
 import os
 import pandas as pd
@@ -33,22 +33,29 @@ current_date = today.strftime("%d.%m.%Y")
 DEFAULT_BUTTON_STYLE = "background-color: rgba(241, 204, 255, 194); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(224, 238, 245); padding: 10px"
 
 rows = []
-with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
-    reader = csv.reader(e)
-    for row in reader:
-        rows.append(row)
-    last_checktime = float(rows[-1][1]) * 3600
-    last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
-    h, m, s = last_checktime_updated.split(":")
-    # Durchschnittliche Zeit pro Tag
-    all_time = 0
-    for row in rows:
-        all_time = all_time + float(row[1])
 
-    mean_time = (all_time/ len(rows)) * 3600
+try:
+    with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
+        reader = csv.reader(e)
+        for row in reader:
+            rows.append(row)
+
+        last_checktime = float(rows[-1][1]) * 3600
+        last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
+        h, m, s = last_checktime_updated.split(":")
+        # Durchschnittliche Zeit pro Tag
+        all_time = 0
+        for row in rows:
+            all_time = all_time + float(row[1])
+
+        mean_time = (all_time/ len(rows)) * 3600
+        up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
+        if current_date != rows[-1][0]:
+            h, m, s = 0,0,0
+except:
+    mean_time = 0
     up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
-    if current_date != rows[-1][0]:
-        h, m, s = 0,0,0
+    h, m, s = 0,0,0
      
 
 class Ui_MainWindow(object):
@@ -98,7 +105,7 @@ class Ui_MainWindow(object):
         # Label für Timetracker
         self.label2 = QtWidgets.QLabel(self.centralwidget)
         self.label2.setGeometry(QtCore.QRect(650, 300, 221, 131))
-        self.label2.setText("TIME")
+        self.label2.setText("")
         self.label2.setFont(font)
         self.label2.setStyleSheet("color:grey")
         
@@ -111,12 +118,19 @@ class Ui_MainWindow(object):
         self.label3.setFont(font)
         self.label3.setStyleSheet("color:grey")
         
-        # label for displaying that adding of time by the use was succesful
+        # label for displaying that adding of time by the user was succesful
         self.label4 = QtWidgets.QLabel(self.centralwidget)
         self.label4.setGeometry(QtCore.QRect(80, 410, 211, 131))
         self.label4.setText("")
         self.label4.setFont(font)
         self.label4.setStyleSheet("color:grey")
+
+        # label for high score
+        self.label5 = QtWidgets.QLabel(self.centralwidget)
+        self.label5.setGeometry(QtCore.QRect(80, 80, 211, 131))
+        self.label5.setText("High score: ")
+        self.label5.setFont(font)
+        self.label5.setStyleSheet("color:grey")
 
         # Canvas für die Plots
         self.figure = plt.figure()
@@ -157,18 +171,10 @@ class Ui_MainWindow(object):
         self.b3.setFont(font)
         self.b3.setStyleSheet("background-color: rgb(200, 255, 226); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(213, 255, 213); padding: 10px")
         self.b3.setObjectName("b3")
-        #self.b3.clicked.connect(self.clickedb3)
+        self.b3.clicked.connect(self.takeinputs)
 
         font = QtGui.QFont("Didot", QtGui.QFont.Bold)
         font.setPointSize(23)
-
-        # PushButton for truncating Table
-        self.b4 = QtWidgets.QPushButton(self.centralwidget)
-        self.b4.setGeometry(QtCore.QRect(80, 80, 211, 131))
-        self.b4.setFont(font)
-        self.b4.setStyleSheet("background-color: rgb(200, 255, 226); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(213, 255, 213); padding: 10px")
-        self.b4.setObjectName("b4")
-        #self.b4.clicked.connect(self.clickedb4)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -201,7 +207,9 @@ class Ui_MainWindow(object):
         self.b1.setText(_translate("MainWindow", "Start"))
         self.b2.setText(_translate("MainWindow", "Pause"))
         self.b3.setText(_translate("MainWindow", "Add Time"))
-        self.b4.setText(_translate("MainWindow", "Truncate Table"))
+        self.b3.clicked.connect(self.takeinputs)
+        #self.b4.setText(_translate("MainWindow", "Truncate Table"))
+
         self.menuStatistiken.setTitle(_translate("MainWindow", "Statistiken"))
         self.actionGehe_zu_Statistiken.setText(_translate("MainWindow", "Gehe zu Statistiken"))
     
@@ -222,7 +230,8 @@ class Ui_MainWindow(object):
         
      # plot function
     def plot(self):
-        self.df = pd.read_csv('/Users/rea/Documents/TimeTrackerApp/Data.csv', header=None)
+        #self.df = pd.read_csv('/Users/rea/Documents/TimeTrackerApp/Data.csv', header=None)
+        self.df = pd.read_csv(os.path.join(script_dir, "Data.csv"), header=None)
         self.df.columns = ['Datum', 'Zeit (h)'] 
         self.figure.clear()
         self.df.plot(kind='bar', x='Datum', y='Zeit (h)')
@@ -230,12 +239,32 @@ class Ui_MainWindow(object):
         plt.show()
         self.canvas.draw()
 
+    def takeinputs(self):
+        print("Hey")
+        #addtime = QtWidgets.QInputDialog().getText(," xy", "Enter")
+        #addtime, done1 = QtWidgets.QInputDialog.getText(
+          #  self, 'Input Dialog', 'Enter the time you want to add in the format HH:MM:SS:')
+    # Problem scheint darin zu liegen, dass hier Ui_MainWindow(object), müsste aber (QtWidgets.QWidget) sein, aslo Qobject...
+    # das hatte ich bei dem TimeTracker schon mal (Lars fragen)
+        '''try:
+            with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
+                reader = csv.reader(e)
+                for row in reader:
+                    rows.append(row)
+                if rows[-1][0] == current_date:
+                    last_checktime = float(rows[-1][1]) * 3600
+                    last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
+                    self.label2.setText(str(last_checktime_updated))
+                else: 
+                    ...
+        except:'''
+
     def clickedb1(self):
         Ui_MainWindow.STARTED = True
         self.b1.setStyleSheet("background-color: rgb(208, 182, 228); color: grey; border-style: inset; border-width: 2px;  border-radius: 10px; border-color: beige; padding: 10px")
         self.b2.setStyleSheet(DEFAULT_BUTTON_STYLE)
         rows = []
-        # was wenn Datei noch nicht existiert?
+        
         try:
             with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
                 reader = csv.reader(e)
@@ -275,9 +304,9 @@ class Ui_MainWindow(object):
                 reader = csv.reader(e)
                 for row in reader:
                     rows.append(row)
-                    
-
+                
                 if rows[-1][0] == DateTime[0]:
+
                     # addierte Zeit für current date
                     newtime = float(rows[-1][1]) + hours
 
@@ -291,6 +320,13 @@ class Ui_MainWindow(object):
                     olddatafile.close()
 
                     # csv-Datei neu beschreiben, mit allen Zeilen 
+
+                    # transform date into datetime object
+                    '''for row in rows:
+                        row[0] = datetime.strptime(row[0], '%d.%m.%Y')
+                    
+                    # transform date into string and include only entries from the current week
+                    rows = [row[0] for row in rows if row[0] > (rows[-1][0] - timedelta(days=7))]'''
 
                     with open(os.path.join(script_dir, "Data.csv"), 'a', encoding='utf-8') as f:
                         writer = csv.writer(f)
@@ -308,14 +344,21 @@ class Ui_MainWindow(object):
             with open(os.path.join(script_dir, "Data.csv"), 'a', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(DateTime)
-
+        rows = []
         with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
             reader = csv.reader(e)
             for row in reader:
                 rows.append(row)
+            
             last_checktime = float(rows[-1][1]) * 3600
             last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
             h, m, s = last_checktime_updated.split(":")
+
+            # Highscore
+
+            xs = [float(x[1]) for x in rows]
+            highscore_day = time.strftime('%H:%M:%S', time.gmtime(int(max(xs)*3600)))
+
             # Durchschnittliche Zeit pro Tag
             all_time = 0
             for row in rows:
@@ -324,6 +367,11 @@ class Ui_MainWindow(object):
             mean_time = (all_time/ len(rows)) * 3600
             up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
             self.label3.setText("Average Productivity: \n" + str(up_mean_time))
+            
+            #highscore = max([float(x[1]) for x in rows])
+            
+            self.label5.setText(f"High score (day):\n{highscore_day}")
+
 
 if __name__ == "__main__":
     import sys
