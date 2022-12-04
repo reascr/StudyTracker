@@ -25,9 +25,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 # directory of script
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
-# 
+
 today = date.today()
 current_date = today.strftime("%d.%m.%Y")
+
 
 
 DEFAULT_BUTTON_STYLE = "background-color: rgba(241, 204, 255, 194); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(224, 238, 245); padding: 10px"
@@ -45,10 +46,12 @@ try:
         h, m, s = last_checktime_updated.split(":")
         # Durchschnittliche Zeit pro Tag
         all_time = 0
+        time_seven = sum([float(x[1]) for x in rows[-7:]]) 
         for row in rows:
             all_time = all_time + float(row[1])
 
-        mean_time = (all_time/ len(rows)) * 3600
+        #mean_time = (all_time/ len(rows)) * 3600 # all data!
+        mean_time = (time_seven/ 7) * 3600 # only last seven days
         up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
         if current_date != rows[-1][0]:
             h, m, s = 0,0,0
@@ -131,6 +134,20 @@ class Ui_MainWindow(object):
         self.label5.setText("High score: ")
         self.label5.setFont(font)
         self.label5.setStyleSheet("color:grey")
+
+        # label for weekly hours
+        self.label6 = QtWidgets.QLabel(self.centralwidget)
+        self.label6.setGeometry(QtCore.QRect(630, 170, 211, 131))
+        self.label6.setText("Weekly hours: ")
+        self.label6.setFont(font)
+        self.label6.setStyleSheet("color:grey")
+
+        # label for weekly hours since last monday
+        self.label7 = QtWidgets.QLabel(self.centralwidget)
+        self.label7.setGeometry(QtCore.QRect(80, 180, 211, 131))
+        self.label7.setText("Hours since last monday): ")
+        self.label7.setFont(font)
+        self.label7.setStyleSheet("color:grey")
 
         # Canvas für die Plots
         self.figure = plt.figure()
@@ -365,12 +382,50 @@ class Ui_MainWindow(object):
                 all_time = all_time + float(row[1])
 
             mean_time = (all_time/ len(rows)) * 3600
+            print(mean_time)
             up_mean_time = time.strftime('%H:%M:%S', time.gmtime(int(mean_time)))
-            self.label3.setText("Average Productivity: \n" + str(up_mean_time))
+            #self.label3.setText("Average Productivity: \n" + str(up_mean_time))
             
             #highscore = max([float(x[1]) for x in rows])
             
+            
             self.label5.setText(f"High score (day):\n{highscore_day}")
+
+            # function to convert seconds to H:M:S format if H > 24 (https://stackoverflow.com/questions/63865536/how-to-convert-seconds-to-hhmmss-format-without-failing-if-hour-more-than-24)
+            def to_hms(s):
+                m, s = divmod(s, 60)
+                h, m = divmod(m, 60)
+                return '{}:{:0>2}:{:0>2}'.format(h, m, s)
+
+            #weekly hours
+
+            weekly_hours = 0
+            for x in xs[-7:]:
+                weekly_hours = weekly_hours + x
+
+            weekly_hours = to_hms(int(weekly_hours * 3600))
+            
+            self.label6.setText(f"Weekly hours:\n{weekly_hours}")
+
+            # weekly hours from monday on
+
+            # get index of row
+            
+            this_monday = 0
+            for row in rows:
+                year = int(row[0].split(".")[2])
+                day = int(row[0].split(".")[0])
+                month = int(row[0].split(".")[1])
+                weekday = date(year, month, day).weekday()
+                # if it is a monday and the last monday stored in the list
+                if weekday == 0 and rows.index(row) >= len(rows) - 7: 
+                    this_monday = rows.index(row)
+            
+            hours_since_last_monday = sum([float(x[1]) for x in rows[this_monday:]]) 
+            sec_mon = int(hours_since_last_monday * 3600)
+
+            self.label7.setText(f"Hours since last monday:\n{to_hms(sec_mon)}")
+
 
 
 if __name__ == "__main__":
