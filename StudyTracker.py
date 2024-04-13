@@ -20,7 +20,7 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 # directory of script
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -44,7 +44,7 @@ try:
         last_checktime = float(rows[-1][1]) * 3600
         last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
         h, m, s = last_checktime_updated.split(":")
-        # Durchschnittliche Zeit pro Tag
+        # average time per day
         all_time = 0
         time_seven = sum([float(x[1]) for x in rows[-7:]]) 
         for row in rows:
@@ -120,13 +120,6 @@ class Ui_MainWindow(object):
         self.label3.setText("Average Productivity: \n" + str(up_mean_time))
         self.label3.setFont(font)
         self.label3.setStyleSheet("color:grey")
-        
-        # label for displaying that adding of time by the user was succesful
-        self.label4 = QtWidgets.QLabel(self.centralwidget)
-        self.label4.setGeometry(QtCore.QRect(80, 410, 211, 131))
-        self.label4.setText("")
-        self.label4.setFont(font)
-        self.label4.setStyleSheet("color:grey")
 
         # label for high score
         self.label5 = QtWidgets.QLabel(self.centralwidget)
@@ -145,11 +138,10 @@ class Ui_MainWindow(object):
         # label for weekly hours since last monday
         self.label7 = QtWidgets.QLabel(self.centralwidget)
         self.label7.setGeometry(QtCore.QRect(80, 180, 211, 131))
-        self.label7.setText("Hours since last monday): ")
+        self.label7.setText("Since last monday: ")
         self.label7.setFont(font)
         self.label7.setStyleSheet("color:grey")
 
-        # Canvas für die Plots
         self.figure = plt.figure()
     
         self.canvas = FigureCanvas(self.figure)
@@ -182,13 +174,7 @@ class Ui_MainWindow(object):
         self.b2.setObjectName("b2")
         self.b2.clicked.connect(self.clickedb2)
 
-        # PushButton for adding time manually 
-        self.b3 = QtWidgets.QPushButton(self.centralwidget)
-        self.b3.setGeometry(QtCore.QRect(80, 520, 221, 131))
-        self.b3.setFont(font)
-        self.b3.setStyleSheet("background-color: rgb(200, 255, 226); color: grey; border-style: outset; border-width: 5px;  border-radius: 15px; border-color: rgb(213, 255, 213); padding: 10px")
-        self.b3.setObjectName("b3")
-        self.b3.clicked.connect(self.takeinputs)
+
 
         font = QtGui.QFont("Didot", QtGui.QFont.Bold)
         font.setPointSize(23)
@@ -223,14 +209,16 @@ class Ui_MainWindow(object):
         self.b0.setText(_translate("MainWindow", "Wochenübersicht"))
         self.b1.setText(_translate("MainWindow", "Start"))
         self.b2.setText(_translate("MainWindow", "Pause"))
-        self.b3.setText(_translate("MainWindow", "Add Time"))
-        self.b3.clicked.connect(self.takeinputs)
-        #self.b4.setText(_translate("MainWindow", "Truncate Table"))
 
         self.menuStatistiken.setTitle(_translate("MainWindow", "Statistiken"))
         self.actionGehe_zu_Statistiken.setText(_translate("MainWindow", "Gehe zu Statistiken"))
     
-    
+    def create_matplotlib_figure(self):
+        figure = Figure()
+        canvas = FigureCanvas(figure)
+
+        return figure, canvas
+
     # method called by timer
 
     def showTime(self):
@@ -247,7 +235,6 @@ class Ui_MainWindow(object):
         
      # plot function
     def plot(self):
-        #self.df = pd.read_csv('/Users/rea/Documents/TimeTrackerApp/Data.csv', header=None)
         self.df = pd.read_csv(os.path.join(script_dir, "Data.csv"), header=None)
         self.df.columns = ['Datum', 'Zeit (h)'] 
         self.figure.clear()
@@ -255,26 +242,26 @@ class Ui_MainWindow(object):
         plt.tight_layout()
         plt.show()
         self.canvas.draw()
+    
+    def plot2(self): 
+        # Clear previous plot
+        self.canvas.figure.clear()
 
-    def takeinputs(self):
-        print("Hey")
-        #addtime = QtWidgets.QInputDialog().getText(," xy", "Enter")
-        #addtime, done1 = QtWidgets.QInputDialog.getText(
-          #  self, 'Input Dialog', 'Enter the time you want to add in the format HH:MM:SS:')
-    # Problem scheint darin zu liegen, dass hier Ui_MainWindow(object), müsste aber (QtWidgets.QWidget) sein, aslo Qobject...
-    # das hatte ich bei dem TimeTracker schon mal (Lars fragen)
-        '''try:
-            with open(os.path.join(script_dir, "Data.csv"), encoding = 'utf-8') as e:
-                reader = csv.reader(e)
-                for row in reader:
-                    rows.append(row)
-                if rows[-1][0] == current_date:
-                    last_checktime = float(rows[-1][1]) * 3600
-                    last_checktime_updated = time.strftime('%H:%M:%S', time.gmtime(int(last_checktime)))
-                    self.label2.setText(str(last_checktime_updated))
-                else: 
-                    ...
-        except:'''
+        # Plot all data from the CSV file
+        self.df = pd.read_csv(os.path.join(script_dir, "Data.csv"), header=None)
+        self.df.columns = ['Datum', 'Zeit (h)']
+
+        # Check if the DataFrame is not empty
+        if not self.df.empty:
+            ax = self.canvas.figure.add_subplot(111)
+            self.df.plot(kind='bar', x='Datum', y='Zeit (h)', ax=ax)
+            plt.tight_layout()
+            self.canvas.draw()
+
+        
+        else:
+            print("ndjkesf")
+
 
     def clickedb1(self):
         Ui_MainWindow.STARTED = True
@@ -424,7 +411,8 @@ class Ui_MainWindow(object):
             hours_since_last_monday = sum([float(x[1]) for x in rows[this_monday:]]) 
             sec_mon = int(hours_since_last_monday * 3600)
 
-            self.label7.setText(f"Hours since last monday:\n{to_hms(sec_mon)}")
+            self.label7.setText(f"Since last monday:\n{to_hms(sec_mon)}")
+            self.plot2()
 
 
 
